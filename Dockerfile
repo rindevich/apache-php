@@ -21,7 +21,6 @@ RUN apt-get update && apt-get upgrade -y \
         git \
         mc \
         htop \
-        mysql-client \
         sshpass \
         gnupg \
         nano \
