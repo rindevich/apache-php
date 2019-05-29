@@ -1,8 +1,8 @@
 FROM php:7-apache
 
-RUN apt-get update && apt-get upgrade -y
-
-RUN apt-get install -y \
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install --no-install-recommends --no-install-suggests -q -y gnupg2 dirmngr wget apt-transport-https lsb-release ca-certificates \
+    && apt-get install -y \
         libicu-dev \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
@@ -12,6 +12,7 @@ RUN apt-get install -y \
         software-properties-common  \
         libcurl3 curl \
         zip \
+        wget \
         unzip \
         libzip-dev \
         inotify-tools \
@@ -32,29 +33,46 @@ RUN apt-get install -y \
         libicu-dev \
         mysql-client
 
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt-get install -y nodejs build-essential
+RUN mkdir -p /usr/share/man/man1 \
+    && curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt-get install -y nodejs build-essential
 
-RUN docker-php-ext-install opcache \
-    && docker-php-ext-install -j$(nproc) iconv \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install -j$(nproc) zip \
-    && docker-php-ext-install -j$(nproc) intl
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-configure zip --with-libzip \
+    && docker-php-ext-install \
+    opcache \
+    bcmath \
+    gd \
+    zip \
+    intl \
+    mysqli \
+    bz2 \
+    pdo_mysql \
+    soap \
+    sockets \
+    tokenizer \
+    xmlrpc \
+    xsl \
+    exif \
+    calendar
 
 RUN pecl install mcrypt-1.0.2
 
-RUN pecl install apcu
-RUN echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini
+RUN pecl install imagick \
+        apcu \
+        imagick \
+        xdebug \
+        pcov \
+        redis
 
-#RUN pecl install memcached
-#RUN echo "extension=memcached.so" > /usr/local/etc/php/conf.d/memcached.ini
+RUN docker-php-ext-enable imagick\
+        apcu \
+        imagick \
+        xdebug \
+        pcov \
+        redis
 
-RUN pecl install imagick
-RUN echo "extension=imagick.so" > /usr/local/etc/php/conf.d/imagick.ini
-
-RUN pecl install xdebug docker-php-ext-enable xdebug
-
-RUN pecl install redis docker-php-ext-enable redis
+#RUN echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini
+#RUN echo "extension=imagick.so" > /usr/local/etc/php/conf.d/imagick.ini
 
 RUN echo "date.timezone=Europe/Berlin" >> /usr/local/etc/php/conf.d/timezone.ini
 
@@ -75,9 +93,10 @@ RUN service apache2 restart
 
 RUN echo "alias ll='ls -ahl'" >> /etc/bash.bashrc
 
+RUN pecl clear-cache
+
 WORKDIR /var/www/html
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-RUN php composer-setup.php --install-dir=/usr/local/bin/ --filename=composer
-RUN php -r "unlink('composer-setup.php');"
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer
