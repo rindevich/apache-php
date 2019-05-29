@@ -86,6 +86,16 @@ RUN set -eux; \
 		echo 'xdebug.profiler_output_dir="/var/www/html/vendor/shopware/shopware/build/artifacts"'; \
 	} > /usr/local/etc/php/conf.d/xdebug.ini
 
+RUN set -eux; \
+	{ \
+		echo 'memory_limit=1024M'; \
+		echo 'max_input_time=-1'; \
+		echo 'max_execution_time=0'; \
+		echo 'post_max_size=256M'; \
+		echo 'upload_max_filesize=256M'; \
+		echo 'max_input_vars=2000'; \
+	} > /usr/local/etc/php/conf.d/memlimit.ini
+
 # Apache + PHP requires preforking Apache for best results
 RUN a2enmod rewrite && a2dismod mpm_event && a2enmod mpm_prefork
 RUN service apache2 restart
